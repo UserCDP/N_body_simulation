@@ -1,6 +1,6 @@
 CXX = g++
-CXXFLAGS = -std=c++11 -pthread -Iinclude
-SRC = src/main.cpp src/body.cpp
+CXXFLAGS = `pkg-config --cflags --libs gtkmm-4.0` -std=c++17 -pthread -Iinclude 
+SRC = ssrc/main.cpp src/body.cpp src/visualizer.cpp src/simulation.cpp
 OBJ = obj/main.o obj/body.o
 TARGET = n_body_simulation
 

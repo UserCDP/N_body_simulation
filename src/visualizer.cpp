@@ -2,6 +2,12 @@
 #include <cmath>
 #include <iostream>
 #include <mutex>
+
+/**
+ * Constructor for the Visualizer class for the graphical representation of the simulation.
+ * @param b     The list of bodies in the simulation
+ * @param m     A mutex
+ */
 Visualizer::Visualizer(std::vector<Body>* b, std::mutex* m)
     : bodies(b), mutex(m) {
     set_title("N-Body Simulation");
