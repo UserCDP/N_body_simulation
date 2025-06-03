@@ -111,11 +111,11 @@ int main()
     sequential_simulation(bodies, n, forces, all_positions, step_time, total_time_steps);
     auto finish = std::chrono::steady_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(finish - start).count();
-    for (int i = 0; i < n * total_time_steps * 2; ++i)
+    /*for (int i = 0; i < n * total_time_steps * 2; ++i)
     {
-        // printf("%f\n", all_positions[i]);
-        printf("Time elapsed: %d\n", (int)elapsed);
-    }
+        printf("%f\n", all_positions[i]);
+    }*/
+    printf("Time elapsed: %d\n", (int)elapsed);
 
     // TODO Concurrent Simulation (call function in main.cpp, DO NOT clog main()!)
 
