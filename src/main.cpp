@@ -2,15 +2,59 @@
 #include "simulation.h"
 #include <vector>
 #include <cstdlib>
+const double G_CONST = 0.000000000066743;
+
+
+void sequential_simulation(Body* bodies, int n, double* forces, double* all_positions, double step_time, int total_time_steps) {
+    for (int current_time_step = 0; current_time_step < total_time_steps; current_time_step++) {
+        // Update forces
+        for (int i = 0; i < n; i++) {
+            for (int j = i; j < n; j++) {
+                double distance_x = (bodies[i].position[0] - bodies[j].position[0]) * (bodies[i].position[0] - bodies[j].position[0]);
+                double distance_y = (bodies[i].position[1] - bodies[j].position[1]) * (bodies[i].position[1] - bodies[j].position[1]);
+                double force = G_CONST * bodies[i].mass * bodies[j].mass / (distance_x + distance_y);
+                forces[(i * n + j) * 2] = force * sqrt(distance_x / (distance_x + distance_y));
+                forces[(i * n + j) * 2 + 1] = force * sqrt(distance_y / (distance_x + distance_y));
+                forces[(j * n + i) * 2] = forces[(i * n + j) * 2];
+                forces[(j * n + i) * 2 + 1] = forces[(i * n + j) * 2 + 1];
+            }
+        }
+        // Update velocities and positions
+        for (int i = 0; i < n; i++) {
+            double force_x = 0.0;
+            double force_y = 0.0;
+            for (int j = 0; j < n; j++) {
+                if (j == i) { continue; }
+                force_x += forces[(i * n + j) * 2];
+                force_y += forces[(i * n + j) * 2 + 1];
+            }
+            bodies[i].velocity[0] += force_x / bodies[i].mass * step_time;
+            bodies[i].velocity[1] += force_y / bodies[i].mass * step_time;
+            bodies[i].position[0] += bodies[i].velocity[0] * step_time;
+            bodies[i].position[1] += bodies[i].velocity[1] * step_time;
+        }
+        // Store new positions
+        store_positions(bodies, n, all_positions, current_time_step);
+    }
+}
+
+
+void store_positions(Body* bodies, int n, double* all_positions, int current_time_step) {
+    for (int i = 0; i < n; i++) {
+        all_positions[(current_time_step * n + i) * 2] = bodies[i].position[0];
+        all_positions[(current_time_step * n + i) * 2 + 1] = bodies[i].position[1];
+    }
+}
+
 
 int main()
 {
     // Inputs:
-    const int threads = 16;                                   // The number of threads
-    const double step_time = 3600.0;                          // Time, in secs, in between each time step
-    const int step_sync = 24;                                 // The number of steps before calculation results must be updated
-    const int n = 8;                                          // Number of bodies
-    const std::vector<double> initial_body_positions[n * 2];  // The position of bodies at time step t=0: {x1, y1, x2, y2, ...}
+    const int threads = 16; // The number of threads
+    const double step_time = 3600.0; // Time, in secs, in between each time step
+    const int total_time_steps = 1024; // The number of steps to simulate
+    const int n = 8; // Number of bodies
+    const std::vector<double> initial_body_positions[n * 2]; // The position of bodies at time step t=0: {x1, y1, x2, y2, ...}
     const std::vector<double> initial_body_velocities[n * 2]; // The velocities of bodies at time step t=0: {vx1, vy1, vx2, vy2, ...}
 
     int t = 0; // The current time step, multiply with step_time for current time in secs.
@@ -18,13 +62,13 @@ int main()
     // The matrix of forces between body i and j.
     // forces[(i * n + j) * 2] for x, forces[(i * n + j) * 2 + 1] for y
     // Additionally, forces[(i * n + j) * 2] == forces[(j * n + i) * 2] since matrix is symmetrical
-    double *forces = (double *)malloc(n * n * 2 * sizeof(double));
+    double* forces = (double*)malloc(n * n * 2 * sizeof(double));
 
-    // Same as with matrix of forces without multiplying by 2
-    // (no x or y distinction, just the norm value between body i and j). (Still symmetrical)
-    double *distances = (double *)malloc(n * n * sizeof(double));
+    // Stores position of all bodies for every time step
+    // all_positions[(i * n + j) * 2 (+1)] to access position_x of body j for timestep i (+1 for position_y)
+    double* all_positions = (double*)malloc(n * total_time_steps * 2 * sizeof(double))
 
-    Body *bodies = (Body *)malloc(n * sizeof(Body));
+    Body* bodies = (Body*)malloc(n * sizeof(Body));
 
     // TODO Initialize Body instances as well as the forces and distances matrices by calling functions in another file (initialization.h and .cpp?)
     for (int i = 0; i < n; i++)
@@ -32,11 +76,11 @@ int main()
         bodies[i] = Body();
     }
 
-    std::thread simulation_thread(run_simulation, bodies, forces, distances, n, step_time, step_sync, threads);
+    std::thread simulation_thread(run_simulation, bodies, n, forces, all_positions, step_time, total_time_steps, threads);
     simulation_thread.join();
-    // TODO Sequential Simulation (call function in body.cpp, do not clog main()!)
+    // TODO Sequential Simulation (call function in main.cpp, do not clog main()!)
 
-    // TODO Concurrent Simulation (call function in body.cpp, DO NOT clog main()! Really don't for concurrent pls)
+    // TODO Concurrent Simulation (call function in main.cpp, DO NOT clog main()! Really don't for concurrent pls)
 
     free(forces);
     free(distances);
