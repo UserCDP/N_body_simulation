@@ -1,7 +1,7 @@
 CXX = g++
 CXXFLAGS = -std=c++11 -pthread -Iinclude
-SRC = src/main.cpp
-OBJ = obj/main.o
+SRC = src/main.cpp src/body.cpp
+OBJ = obj/main.o obj/body.o
 TARGET = n_body_simulation
 
 all: $(TARGET)
