@@ -98,7 +98,7 @@ int main()
 
     Body *bodies = (Body *)malloc(n * sizeof(Body));
 
-    // TODO Initialize Body instances as well as the forces and distances matrices by calling functions in another file (initialization.h and .cpp?)
+    // Initialize Body instances
     for (int i = 0; i < n; i++)
     {
         new (&bodies[i]) Body();
@@ -106,17 +106,17 @@ int main()
 
     // std::thread simulation_thread(run_simulation, bodies, n, forces, all_positions, step_time, total_time_steps, threads);
     // simulation_thread.join();
-    // TODO Sequential Simulation (call function in main.cpp, do not clog main()!)
+
     sequential_simulation(bodies, n, forces, all_positions, step_time, total_time_steps);
     for (int i = 0; i < n * total_time_steps * 2; ++i)
     {
-        // You can access each position as all_positions[i]
         printf("%f\n", all_positions[i]);
     }
 
-    // TODO Concurrent Simulation (call function in main.cpp, DO NOT clog main()! Really don't for concurrent pls)
+    // TODO Concurrent Simulation (call function in main.cpp, DO NOT clog main()!)
 
     free(forces);
     free(all_positions);
+    free(bodies);
     return 0;
 }
