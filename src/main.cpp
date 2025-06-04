@@ -3,6 +3,7 @@
 #include <gtkmm/application.h>
 #include <vector>
 #include <cstdlib>
+#include <iostream>
 #include <cmath>
 #include <thread>
 #include <stdio.h>
@@ -44,13 +45,16 @@ void sequential_simulation(Body *bodies, int n, double *forces, double *all_posi
         {
             for (int j = i; j < n; j++)
             {
-                double distance_x = (bodies[i].position[0] - bodies[j].position[0]) * (bodies[i].position[0] - bodies[j].position[0]);
-                double distance_y = (bodies[i].position[1] - bodies[j].position[1]) * (bodies[i].position[1] - bodies[j].position[1]);
-                double force = G_CONST * bodies[i].mass * bodies[j].mass / (distance_x + distance_y);
-                forces[(i * n + j) * 2] = force * sqrt(distance_x / (distance_x + distance_y));
-                forces[(i * n + j) * 2 + 1] = force * sqrt(distance_y / (distance_x + distance_y));
-                forces[(j * n + i) * 2] = forces[(i * n + j) * 2];
-                forces[(j * n + i) * 2 + 1] = forces[(i * n + j) * 2 + 1];
+                double dx = bodies[j].position[0] - bodies[i].position[0];
+                double dy = bodies[j].position[1] - bodies[i].position[1];
+                double dist_sq = dx * dx + dy * dy + 1e-6;
+                double dist = std::sqrt(dist_sq);
+                double force = G_CONST * bodies[i].mass * bodies[j].mass / dist_sq;
+                forces[(i * n + j) * 2]     = force * dx / dist;
+                forces[(i * n + j) * 2 + 1] = force * dy / dist;
+                forces[(j * n + i) * 2]     = -forces[(i * n + j) * 2];
+                forces[(j * n + i) * 2 + 1] = -forces[(i * n + j) * 2 + 1];
+
             }
         }
         // Update velocities and positions
@@ -77,7 +81,41 @@ void sequential_simulation(Body *bodies, int n, double *forces, double *all_posi
     }
 }
 
-int main()
+int main(int argc, char** argv)
+{
+    const int n = 8;                      // Number of bodies
+    const int total_time_steps = 1024;    // Number of time steps
+    const double step_time = 3600.0;      // Time between steps (in seconds)
+
+    // Allocate memory
+    double* forces = new double[n * n * 2];                         // Force matrix
+    double* all_positions = new double[n * total_time_steps * 2];   // Position buffer
+    Body* bodies = new Body[n];                                     // Array of Body instances
+
+    // Initialize bodies
+    for (int i = 0; i < n; ++i) {
+        new (&bodies[i]) Body();  // Placement new to construct in-place
+    }
+    // Run the simulation
+    auto start = std::chrono::steady_clock::now();
+    sequential_simulation(bodies, n, forces, all_positions, step_time, total_time_steps);
+    auto end = std::chrono::steady_clock::now();
+    auto elapsed_us = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+    std::cout << "Simulation time: " << elapsed_us << " μs\n";
+
+    // Start GTK application with the visualizer
+    auto app = Gtk::Application::create(argc, argv, "org.simulation.nbody");
+    Visualizer vis(all_positions, n, total_time_steps);
+    app->run(vis);
+
+    // Free memory
+    free(forces);
+    free(all_positions);
+    free(bodies);
+    return 0;
+}
+
+/*int main()
 {
     // Inputs:
     const int threads = 16;                                   // The number of threads
@@ -131,3 +169,4 @@ int main()
     free(bodies);
     return 0;
 }
+*/

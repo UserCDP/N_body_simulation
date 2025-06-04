@@ -3,13 +3,10 @@
 #include <iostream>
 #include <mutex>
 
-/**
- * Constructor for the Visualizer class for the graphical representation of the simulation.
- * @param b     The list of bodies in the simulation
- * @param m     A mutex
- */
-Visualizer::Visualizer(std::vector<Body>* b, std::mutex* m)
-    : bodies(b), mutex(m) {
+
+Visualizer::Visualizer(const double* all_positions, int n_bodies, int total_frames)
+    : all_positions(all_positions), n_bodies(n_bodies), total_frames(total_frames)
+{
     set_title("N-Body Simulation");
     set_default_size(800, 800);
     add(drawing_area);
@@ -19,40 +16,33 @@ Visualizer::Visualizer(std::vector<Body>* b, std::mutex* m)
 }
 
 bool Visualizer::on_timeout() {
+    if (current_frame >= total_frames) return false;
     drawing_area.queue_draw();
     return true;
 }
 
 bool Visualizer::on_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
+    const double scale = 1.0 / 1e5;  
+    const double offset = 400;
     const double radius = 3.0;
-    const double scale = 6.0;
+
     cr->set_source_rgb(0, 0, 0);
     cr->paint();
 
-    std::lock_guard<std::mutex> lock(*mutex);
     cr->set_source_rgb(1, 1, 1);
-    for (const auto& body : *bodies) {
-        double x = body.position[0] * scale;
-        double y = body.position[1] * scale;
-        cr->arc(x, y, radius, 0, 2 * M_PI);
-        cr->fill();
-    }
-    static int frame = 0;
-    if (frame < 300) {
-        auto surface = cr->get_target();
-        surface->flush();
 
-        Cairo::RefPtr<Cairo::ImageSurface> img = Cairo::RefPtr<Cairo::ImageSurface>::cast_dynamic(surface);
-        std::string tempname = "frames/tmp_" + std::to_string(frame) + ".png";
-        std::string finalname = "frames/frame_" + std::to_string(frame) + ".png";
+    for (int i = 0; i < n_bodies; ++i) {
+        double x = all_positions[(current_frame * n_bodies + i) * 2] * scale + offset;
+        double y = all_positions[(current_frame * n_bodies + i) * 2 + 1] * scale + offset;
 
-        try {
-            img->write_to_png(tempname);
-            std::rename(tempname.c_str(), finalname.c_str());
-            frame++;
-        } catch (...) {
-            std::cerr << "Skipped frame " << frame << " due to PNG write error\n";
+        if (x >= 0 && y >= 0 && x <= 800 && y <= 800) {
+            cr->arc(x, y, radius, 0, 2 * M_PI);
+            cr->fill();
         }
     }
+    
+    ++current_frame;
     return true;
 }
+
+

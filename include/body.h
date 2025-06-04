@@ -1,3 +1,6 @@
+#ifndef BODY_H
+#define BODY_H
+
 class Body
 {
 public:
@@ -9,3 +12,5 @@ public:
 	double position[2]; // X coordinate then Y
 	double velocity[2]; // X coordinate then Y
 };
+
+#endif // BODY_H
