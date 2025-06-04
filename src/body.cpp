@@ -4,17 +4,17 @@
 
 // Default constructor: Random initialization
 Body::Body()
-	: mass(static_cast<double>(rand()) / RAND_MAX * 10.0 + 1.0),														 // Random mass between 1 and 10
-	  position{static_cast<double>(rand()) / RAND_MAX * 100.0, static_cast<double>(rand()) / RAND_MAX * 100.0},			 // Random position in a 100x100 area
-	  velocity{static_cast<double>(rand()) / RAND_MAX * 10.0 - 5.0, static_cast<double>(rand()) / RAND_MAX * 10.0 - 5.0} // Random velocity between -5 and 5
+	: mass(static_cast<double>(rand()) / RAND_MAX * 1e28 + 1.0),
+	  position{static_cast<double>(rand()) / RAND_MAX * 1e10, static_cast<double>(rand()) / RAND_MAX * 1e10},
+	  velocity{((static_cast<double>(rand()) / RAND_MAX) - 0.5) * 1e5, ((static_cast<double>(rand()) / RAND_MAX) - 0.5) * 1e5 }
 {
 }
 
 // Constructor: Random position and velocity, given mass
 Body::Body(double mass)
 	: mass(mass),
-	  position{static_cast<double>(rand()) / RAND_MAX * 100.0, static_cast<double>(rand()) / RAND_MAX * 100.0},			 // Random position in a 100x100 area
-	  velocity{static_cast<double>(rand()) / RAND_MAX * 10.0 - 5.0, static_cast<double>(rand()) / RAND_MAX * 10.0 - 5.0} // Random velocity between -5 and 5
+	  position{ static_cast<double>(rand()) / RAND_MAX * 1e10, static_cast<double>(rand()) / RAND_MAX * 1e10 },
+	  velocity{ ((static_cast<double>(rand()) / RAND_MAX) - 0.5) * 1e5, ((static_cast<double>(rand()) / RAND_MAX) - 0.5) * 1e5 }
 {
 }
 

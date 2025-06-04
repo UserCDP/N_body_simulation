@@ -2,13 +2,14 @@
 #include <cmath>
 #include <iostream>
 #include <mutex>
+const int SIZE = 800;
 
 
 Visualizer::Visualizer(const double* all_positions, int n_bodies, int total_frames)
     : all_positions(all_positions), n_bodies(n_bodies), total_frames(total_frames)
 {
     set_title("N-Body Simulation");
-    set_default_size(800, 800);
+    set_default_size(SIZE, SIZE);
     add(drawing_area);
     drawing_area.signal_draw().connect(sigc::mem_fun(*this, &Visualizer::on_draw));
     drawing_area.show();
@@ -22,8 +23,8 @@ bool Visualizer::on_timeout() {
 }
 
 bool Visualizer::on_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
-    const double scale = 1.0 / 1e5;  
-    const double offset = 400;
+    const double scale = 1.0 / 1e8;
+    const double offset = SIZE / 2;
     const double radius = 3.0;
 
     cr->set_source_rgb(0, 0, 0);
@@ -35,7 +36,7 @@ bool Visualizer::on_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
         double x = all_positions[(current_frame * n_bodies + i) * 2] * scale + offset;
         double y = all_positions[(current_frame * n_bodies + i) * 2 + 1] * scale + offset;
 
-        if (x >= 0 && y >= 0 && x <= 800 && y <= 800) {
+        if (x >= 0 && y >= 0 && x <= SIZE && y <= SIZE) {
             cr->arc(x, y, radius, 0, 2 * M_PI);
             cr->fill();
         }

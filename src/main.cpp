@@ -10,6 +10,21 @@
 
 const double G_CONST = 0.000000000066743;
 
+void initialize_solar_system(Body* bodies) {
+    // Values from https://nssdc.gsfc.nasa.gov/planetary/factsheet/
+    // n must be equal to 10
+    new (&bodies[0]) Body(1.989 * 1e30, 0.0 * 1e6, 0.0, 0.0, 0.0);
+    new (&bodies[1]) Body(0.330 * 1e24, 57.90 * 1e6, 0.0, 47400, 0.0);
+    new (&bodies[2]) Body(4.870 * 1e24, 108.2 * 1e6, 0.0, 35000, 0.0);
+    new (&bodies[3]) Body(5.970 * 1e24, 149.6 * 1e6, 0.0, 29800, 0.0);
+    new (&bodies[4]) Body(0.642 * 1e24, 228.0 * 1e6, 0.0, 24100, 0.0);
+    new (&bodies[5]) Body(189.8 * 1e25, 778.5 * 1e6, 0.0, 13100, 0.0);
+    new (&bodies[6]) Body(568.0 * 1e24, 1432 * 1e6, 0.0, 9700, 0.0);
+    new (&bodies[7]) Body(86.80 * 1e24, 2867 * 1e6, 0.0, 6800, 0.0);
+    new (&bodies[8]) Body(102.0 * 1e24, 4515 * 1e6, 0.0, 5400, 0.0);
+    new (&bodies[9]) Body(0.073 * 1e24, 150.0 * 1e6, 0.0, 30800, 0.0); // Moon!
+}
+
 void store_positions(Body *bodies, int n, double *all_positions, int current_time_step)
 {
     for (int i = 0; i < n; i++)
@@ -50,9 +65,9 @@ void sequential_simulation(Body *bodies, int n, double *forces, double *all_posi
                 double dist_sq = dx * dx + dy * dy + 1e-6;
                 double dist = std::sqrt(dist_sq);
                 double force = G_CONST * bodies[i].mass * bodies[j].mass / dist_sq;
-                forces[(i * n + j) * 2]     = force * dx / dist;
+                forces[(i * n + j) * 2] = force * dx / dist;
                 forces[(i * n + j) * 2 + 1] = force * dy / dist;
-                forces[(j * n + i) * 2]     = -forces[(i * n + j) * 2];
+                forces[(j * n + i) * 2] = -forces[(i * n + j) * 2];
                 forces[(j * n + i) * 2 + 1] = -forces[(i * n + j) * 2 + 1];
 
             }
@@ -83,9 +98,13 @@ void sequential_simulation(Body *bodies, int n, double *forces, double *all_posi
 
 int main(int argc, char** argv)
 {
-    const int n = 8;                      // Number of bodies
-    const int total_time_steps = 1024;    // Number of time steps
-    const double step_time = 3600.0;      // Time between steps (in seconds)
+    // Inputs:
+    const int threads = 16; // The number of threads
+    const double step_time = 86400.0; // Time, in secs, in between each time step
+    const int total_time_steps = 1024; // The number of steps to simulate
+    const int n = 10; // Number of bodies
+    const std::vector<double> initial_body_positions[n * 2]; // The position of bodies at time step t=0: {x1, y1, x2, y2, ...}
+    const std::vector<double> initial_body_velocities[n * 2]; // The velocities of bodies at time step t=0: {vx1, vy1, vx2, vy2, ...}
 
     // Allocate memory
     double* forces = new double[n * n * 2];                         // Force matrix
@@ -109,9 +128,9 @@ int main(int argc, char** argv)
     app->run(vis);
 
     // Free memory
-    free(forces);
-    free(all_positions);
-    free(bodies);
+    delete[] forces;
+    delete[] all_positions;
+    delete[] bodies;
     return 0;
 }
 
