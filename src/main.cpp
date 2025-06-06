@@ -98,23 +98,33 @@ int main(int argc, char** argv)
     const std::vector<double> initial_body_velocities[n * 2]; // The velocities of bodies at time step t=0: {vx1, vy1, vx2, vy2, ...}
 
     // Allocate memory
-    double* forces = new double[n * n * 2];                         // Force matrix
-    double* all_positions = new double[n * total_time_steps * 2];   // Position buffer
-    Body* bodies = new Body[n];                                     // Array of Body instances
-
-    //initialize_solar_system(bodies);
-
+    double* bis_forces = new double[n * n * 2];                         // Force matrix
+    double* bis_all_positions = new double[n * total_time_steps * 2];   // Position buffer
+    Body* bis_bodies = new Body[n];                                     // Array of Body instances
+    
     // Initialize bodies
     for (int i = 0; i < n; ++i) {
-        new (&bodies[i]) Body();  // Placement new to construct in-place
+        new (&bis_bodies[i]) Body();  // Placement new to construct in-place
     }
-    // Run the simulation
+    // Run the sequential simulation
     auto start = std::chrono::steady_clock::now();
-    sequential_simulation(bodies, n, forces, all_positions, step_time, total_time_steps);
+    sequential_simulation(bis_bodies, n, bis_forces, bis_all_positions, step_time, total_time_steps);
     auto end = std::chrono::steady_clock::now();
     auto elapsed_us = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
     std::cout << "Sequential simulation time: " << elapsed_us << " μs\n";
+    // Free resources
+    delete[] bis_forces;
+    delete[] bis_all_positions;
+    delete[] bis_bodies;
 
+    // Reallocate memory for concurrent
+    double* forces = new double[n * n * 2];                         // Force matrix
+    double* all_positions = new double[n * total_time_steps * 2];   // Position buffer
+    Body* bodies = new Body[n];
+    for (int i = 0; i < n; ++i) {
+        new (&bodies[i]) Body();  // Placement new to construct in-place
+    }
+    // Run concurrent simulation
     start = std::chrono::steady_clock::now();
     thread_creating_simulation(bodies, n, forces, all_positions, step_time, total_time_steps, threads);
     end = std::chrono::steady_clock::now();
