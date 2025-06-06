@@ -23,7 +23,7 @@ bool Visualizer::on_timeout() {
 }
 
 bool Visualizer::on_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
-    const double scale = 1.0 / 1e8;
+    const double scale = 5.0 / 1e11;
     const double offset = SIZE / 2;
     const double radius = 3.0;
 
