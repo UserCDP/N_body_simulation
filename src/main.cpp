@@ -25,15 +25,6 @@ void initialize_solar_system(Body* bodies) {
     new (&bodies[9]) Body(0.073 * 1e24, 150.0 * 1e9, 0.0, 0.0, 30800.0); // Moon!
 }
 
-void store_positions(Body *bodies, int n, double *all_positions, int current_time_step)
-{
-    for (int i = 0; i < n; i++)
-    {
-        all_positions[(current_time_step * n + i) * 2] = bodies[i].position[0];
-        all_positions[(current_time_step * n + i) * 2 + 1] = bodies[i].position[1];
-    }
-}
-
 /**
  * @brief Runs a sequential N-body simulation for a given number of bodies and time steps.
  *
@@ -101,8 +92,8 @@ int main(int argc, char** argv)
     // Inputs:
     const int threads = 16; // The number of threads
     const double step_time = 864000.0; // Time, in secs, in between each time step
-    const int total_time_steps = 10000; // The number of steps to simulate
-    const int n = 10; // Number of bodies
+    const int total_time_steps = 1000; // The number of steps to simulate
+    const int n = 1000; // Number of bodies
     const std::vector<double> initial_body_positions[n * 2]; // The position of bodies at time step t=0: {x1, y1, x2, y2, ...}
     const std::vector<double> initial_body_velocities[n * 2]; // The velocities of bodies at time step t=0: {vx1, vy1, vx2, vy2, ...}
 
@@ -111,18 +102,24 @@ int main(int argc, char** argv)
     double* all_positions = new double[n * total_time_steps * 2];   // Position buffer
     Body* bodies = new Body[n];                                     // Array of Body instances
 
-    initialize_solar_system(bodies);
+    //initialize_solar_system(bodies);
 
     // Initialize bodies
-    //for (int i = 0; i < n; ++i) {
-    //    new (&bodies[i]) Body();  // Placement new to construct in-place
-    //}
+    for (int i = 0; i < n; ++i) {
+        new (&bodies[i]) Body();  // Placement new to construct in-place
+    }
     // Run the simulation
     auto start = std::chrono::steady_clock::now();
     sequential_simulation(bodies, n, forces, all_positions, step_time, total_time_steps);
     auto end = std::chrono::steady_clock::now();
     auto elapsed_us = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-    std::cout << "Simulation time: " << elapsed_us << " μs\n";
+    std::cout << "Sequential simulation time: " << elapsed_us << " μs\n";
+
+    start = std::chrono::steady_clock::now();
+    thread_creating_simulation(bodies, n, forces, all_positions, step_time, total_time_steps, threads);
+    end = std::chrono::steady_clock::now();
+    elapsed_us = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+    std::cout << "Thread Creating concurrent simulation time: " << elapsed_us << " μs\n";
 
     // Start GTK application with the visualizer
     auto app = Gtk::Application::create(argc, argv, "org.simulation.nbody");
