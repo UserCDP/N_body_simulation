@@ -5,8 +5,8 @@
 const int SIZE = 800;
 
 
-Visualizer::Visualizer(const double* all_positions, int n_bodies, int total_frames, const BHTree* final_tree)
-    : all_positions(all_positions), n_bodies(n_bodies), total_frames(total_frames), tree(final_tree)
+Visualizer::Visualizer(const double* all_positions, int n_bodies, int total_frames,const std::vector<BHTree*>& trees)
+    : all_positions(all_positions), n_bodies(n_bodies), total_frames(total_frames), trees(trees), current_frame(0)
 {
     set_title("N-Body Simulation");
     set_default_size(SIZE, SIZE);
@@ -50,12 +50,12 @@ bool Visualizer::on_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
     const double offset_x = width / 2.0;
     const double offset_y = height / 2.0;
     const double radius = 3.0;
-    
+
     cr->set_source_rgb(0, 0, 0);
     cr->paint();
     // Draw tree boxes
-    if (tree) {
-        draw_tree(cr, tree, scale, offset_x, offset_y);
+    if (current_frame < trees.size() && trees[current_frame]) {
+        draw_tree(cr, trees[current_frame], scale, offset_x, offset_y);
     }
     // Draw bodies
     cr->set_source_rgb(1, 1, 1);

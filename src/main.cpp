@@ -99,28 +99,15 @@ void sequential_simulation(Body *bodies, int n, double *forces, double *all_posi
     }
 }
 
-/**
- * @brief Stores the positions of all bodies at the current time step into the all_positions array.
- *
- * This function copies the positions of each body into a pre-allocated array for visualization or further analysis.
- * The positions are stored in a flat array format, where each body's x and y coordinates are stored sequentially.
- *
- * @param bodies Pointer to an array of Body objects representing the bodies in the simulation.
- * @param n The number of bodies in the simulation.
- * @param all_positions Pointer to a pre-allocated array to store the positions of all bodies at each time step.
- * @param current_time_step The current time step index for which positions are being stored.
- */
-void barnes_hut_simulation(Body *bodies, int n, double *all_positions, double step_time, int total_time_steps, double theta, BHTree *&last_tree)
-{
-    for (int t = 0; t < total_time_steps; t++)
-    {
-        Quad root_quad(0.5e11, 0.5e11, 2e11); // adjust bounding box as needed
-        BHTree tree(root_quad);
+void barnes_hut_simulation(Body* bodies, int n, double* all_positions, double step_time, int total_time_steps, double theta, std::vector<BHTree*>& trees) {
+    for (int t = 0; t < total_time_steps; t++) {
+        Quad root_quad(0.0, 0.0, 2e15);
+        BHTree* tree = new BHTree(root_quad);
         for (int i = 0; i < n; ++i)
-            tree.insert(&bodies[i]);
+            tree->insert(&bodies[i]);
 
         for (int i = 0; i < n; ++i)
-            tree.update_force(&bodies[i], theta, G_CONST);
+            tree->update_force(&bodies[i], theta, G_CONST);
 
         for (int i = 0; i < n; ++i)
         {
@@ -129,6 +116,7 @@ void barnes_hut_simulation(Body *bodies, int n, double *all_positions, double st
         }
 
         store_positions(bodies, n, all_positions, t);
+        trees[t] = tree;
     }
 }
 
@@ -191,9 +179,10 @@ int main(int argc, char **argv)
     std::cout << "First body velocity: " << bh_bodies[0].velocity[0] << ", " << bh_bodies[0].velocity[1] << std::endl; // debug
 
     BHTree *final_tree = nullptr;
+    std::vector<BHTree*> trees(total_time_steps, nullptr);
     // Run Barnes-Hut simulation
     start = std::chrono::steady_clock::now();
-    barnes_hut_simulation(bh_bodies, n, bh_positions, step_time, total_time_steps, 0.5, final_tree); // theta = 0.5 is standard
+    barnes_hut_simulation(bh_bodies, n, bh_positions, step_time, total_time_steps, 0.5, trees); // theta = 0.5 
     end = std::chrono::steady_clock::now();
     elapsed_us = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
     std::cout << "Barnes-Hut simulation time: " << elapsed_us << " μs\n";
@@ -209,11 +198,14 @@ int main(int argc, char **argv)
     }
     std::cout << "Average final position difference per body: " << diff_sum / n << " meters\n";
     std::cout << "Final x of body 0: " << bh_positions[(total_time_steps - 1) * n * 2 + 0] << std::endl; // test
+    //std::cout << "Final x of body 0: " << bh_positions[(total_time_steps - 1) * n * 2 + 0] << std::endl;
 
     // Start GTK application with the visualizer
     auto app = Gtk::Application::create(argc, argv, "org.simulation.nbody");
     Visualizer vis(all_positions, n, total_time_steps);
     // Visualizer vis(bh_positions, n, total_time_steps, final_tree); //visualize the barnes simulation
+    Visualizer vis(all_positions, n, total_time_steps, {});
+    Visualizer vis(bh_positions, n, total_time_steps, trees); //uncomment to visualize the barnes simulation
     app->run(vis);
 
     // Free resources
@@ -223,7 +215,7 @@ int main(int argc, char **argv)
     // Free memory
     delete[] bh_positions;
     delete[] bh_bodies;
-    delete final_tree;
+    for (auto* t : trees) delete t;
     delete[] forces;
     delete[] all_positions;
     delete[] bodies;
