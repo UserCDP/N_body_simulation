@@ -1,1 +1,8 @@
 frames
+*.aux
+*fdb_latexmk
+*.fls
+*.log
+*.synctex.gz
+nbody_sim
+n_body_simulation

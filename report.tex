@@ -10,14 +10,17 @@
 \maketitle
 
 \section{Introduction}
-The N-body problem is a classic challenge in computational physics and computer science, involving the prediction of individual motions of a group of celestial objects interacting with each other gravitationally. Due to the quadratic growth in computational complexity as the number of bodies increases, efficient simulation of such systems is both a practical and theoretical concern. This report presents our implementation of an N-body simulation, focusing on both sequential and parallel approaches. We analyze the performance of our solution under varying numbers of bodies, simulation steps, and threads, and discuss the trade-offs and bottlenecks encountered. The results provide insight into the scalability of parallelization strategies for computationally intensive simulations.
+The N-body problem is a classic challenge in computational physics and computer science, involving the prediction of individual motions of a group of celestial objects interacting with each other throught gravitational forces. Due to the quadratic growth in computational complexity as the number of bodies increases, efficient simulation of such systems is both a practical and theoretical need. This report presents our implementation of an N-body simulation, focusing on both sequential and parallel approaches. We analyze the performance of our solution under varying numbers of bodies, simulation steps, and threads. The results provide insight into the scalability of parallelization strategies for computationally intensive simulations.
 
 \section{Approach}
 Using the input data, the N-body simulation function updates an array (stored on the heap) which stores the position of every body on every time step. Every time step, knowing the current mass, position, and velocity of every body, the function updates every position and velocity using the time step length. Importantly, the function first updates velocities and then positions (this is an arbitrary decision, but may result in drastically different simulations compared to the reverse order).\\
 
+
 To update the positions of every body, the function is split into two parts which run every time step. First, the “force calculation” portion of the function which, for every pair of bodies, calculates the x and y force on each of the two bodies and stores this in a “force” matrix (an array stored on the heap). Second, the “body calculation” portion of the function which, for every body, updates its velocity by summing the forces on the corresponding row of the force matrix, and then its position using that new velocity.\\
 
+
 This algorithm works sequentially and already avoids calculating the force of each body twice. To make this parallel, each of the two parts of the function are individually parallelized. Each time step, the “force calculation” portion is split equally into the number of threads dictated and then rejoin before the “body calculation” portion is also split back into the number of threads and then rejoined again. While this creates a lot of threads every single time step, thread creation becomes comparatively cheap when the number of bodies starts nearing 1000. This immediately avoids using any mutexes and atomics, as any individual thread is never writing in the same place (the “force calculation” threads do read the position of bodies concurrently, but those values do not change before all threads rejoin).\\
+
 
 The “body calculation” threads are simply given n/t bodies to update, where n is the number of total bodies and t is the number of threads available. The “force calculation” threads operate slightly differently, as calculating the forces for the first row of the matrix requires n-1 loops while calculating the forces of the second to last row requires a single calculation loop (since the matrix is symmetrical). Therefore, each thread is given approximately the same number of “calculation loops” to compute by the main thread, which ensures an even computational spread across all the threads.
 
@@ -28,7 +31,7 @@ Processor: Intel® Xeon (R) W-1290P\\
 10 cores for a total of 20 logical processors\\
 Lab Computer
 
-\newpage
+% \newpage
 \section{Benchmarks}
 \subsection{For varying body count}
 
@@ -64,7 +67,7 @@ Computed for 1000 steps with 16 threads
 Times are listed in seconds
 $O(n^2)	$Still $O(n^2)$ sadly, starting at around 1000 bodies				
 						
-The slowdown for <500 bodies is created because of excessive thread creation (15 threads, 16-1, are created twice every time step, no matter if they are performing calculations or not, which is 30000 threads)					
+The slowdown for $<500$ bodies is created because of excessive thread creation (15 threads, 16-1, are created twice every time step, no matter if they are performing calculations or not, which is 30000 threads)					
 
 \subsection{For varying step count}
 Performed with 1000 bodies and 16 threads
@@ -84,11 +87,13 @@ Performed with 1000 bodies and 16 threads
 \end{table}
 
 		
-Expectedly linear				
+The result is xpectedly linear.			
 
 \subsection{For varying thread count}
 Computed for 1000 steps and 1000 bodies.
-Sequential Time: 10.3
+
+
+\fbox{Sequential Time: 10.3}
 
 \begin{table}[h]
   \centering
