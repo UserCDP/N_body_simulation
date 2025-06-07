@@ -10,7 +10,19 @@
 
 const double G_CONST = 0.000000000066743;
 
-void initialize_solar_system(Body* bodies) {
+/**
+ * @brief Initializes the solar system bodies with predefined masses, positions, and velocities.
+ *
+ * This function sets up an array of Body objects to represent the Sun, planets, and the Moon
+ * using real-world astronomical data for mass (in kilograms), position (in meters), and velocity (in meters per second).
+ * The function assumes that the array 'bodies' has space for at least 10 Body objects, corresponding to:
+ * Sun, Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune, and the Moon.
+ *
+ * @param bodies Pointer to a pre-allocated array of Body objects where the solar system bodies will be initialized.
+ *               The array must have space for at least 10 Body instances.
+ */
+void initialize_solar_system(Body *bodies)
+{
     // Values from https://nssdc.gsfc.nasa.gov/planetary/factsheet/
     // n must be equal to 10
     new (&bodies[0]) Body(1.989 * 1e30, 0.0 * 1e9, 0.0, 0.0, 0.0);
@@ -60,7 +72,6 @@ void sequential_simulation(Body *bodies, int n, double *forces, double *all_posi
                 forces[(i * n + j) * 2 + 1] = force * dy / dist;
                 forces[(j * n + i) * 2] = -forces[(i * n + j) * 2];
                 forces[(j * n + i) * 2 + 1] = -forces[(i * n + j) * 2 + 1];
-
             }
         }
         // Update velocities and positions
@@ -87,14 +98,14 @@ void sequential_simulation(Body *bodies, int n, double *forces, double *all_posi
     }
 }
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
     // Inputs:
-    const int threads = 16; // The number of threads
-    const double step_time = 864000.0; // Time, in secs, in between each time step
-    const int total_time_steps = 1000; // The number of steps to simulate
-    const int n = 1000; // Number of bodies
-    const std::vector<double> initial_body_positions[n * 2]; // The position of bodies at time step t=0: {x1, y1, x2, y2, ...}
+    const int threads = 16;                                   // The number of threads
+    const double step_time = 864000.0;                        // Time, in secs, in between each time step
+    const int total_time_steps = 1000;                        // The number of steps to simulate
+    const int n = 1000;                                       // Number of bodies
+    const std::vector<double> initial_body_positions[n * 2];  // The position of bodies at time step t=0: {x1, y1, x2, y2, ...}
     const std::vector<double> initial_body_velocities[n * 2]; // The velocities of bodies at time step t=0: {vx1, vy1, vx2, vy2, ...}
 
     // Allocate memory
@@ -103,13 +114,14 @@ int main(int argc, char** argv)
     // Additionally, forces[(i * n + j) * 2] == forces[(j * n + i) * 2] since matrix is symmetrical
     // Stores position of all bodies for every time step
     // all_positions[(i * n + j) * 2 (+1)] to access position_x of body j for timestep i (+1 for position_y)
-    double* bis_forces = new double[n * n * 2];                         // Force matrix
-    double* bis_all_positions = new double[n * total_time_steps * 2];   // Position buffer
-    Body* bis_bodies = new Body[n];                                     // Array of Body instances
-    
+    double *bis_forces = new double[n * n * 2];                       // Force matrix
+    double *bis_all_positions = new double[n * total_time_steps * 2]; // Position buffer
+    Body *bis_bodies = new Body[n];                                   // Array of Body instances
+
     // Initialize bodies
-    for (int i = 0; i < n; ++i) {
-        new (&bis_bodies[i]) Body();  // Placement new to construct in-place
+    for (int i = 0; i < n; ++i)
+    {
+        new (&bis_bodies[i]) Body(); // Placement new to construct in-place
     }
     // Run the sequential simulation
     auto start = std::chrono::steady_clock::now();
@@ -123,12 +135,14 @@ int main(int argc, char** argv)
     delete[] bis_bodies;
 
     // Reallocate memory for concurrent
-    double* forces = new double[n * n * 2];                         // Force matrix
-    double* all_positions = new double[n * total_time_steps * 2];   // Position buffer
-    Body* bodies = new Body[n];
-    for (int i = 0; i < n; ++i) {
-        new (&bodies[i]) Body();  // Placement new to construct in-place
+    double *forces = new double[n * n * 2];                       // Force matrix
+    double *all_positions = new double[n * total_time_steps * 2]; // Position buffer
+    Body *bodies = new Body[n];
+    for (int i = 0; i < n; ++i)
+    {
+        new (&bodies[i]) Body(); // Placement new to construct in-place
     }
+
     // Run concurrent simulation
     start = std::chrono::steady_clock::now();
     thread_creating_simulation(bodies, n, forces, all_positions, step_time, total_time_steps, threads);
