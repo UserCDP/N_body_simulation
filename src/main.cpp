@@ -175,10 +175,6 @@ int main(int argc, char **argv)
     {
         new (&bh_bodies[i]) Body(bis_bodies[i]);
     }
-    std::cout << "First body position: " << bh_bodies[0].position[0] << ", " << bh_bodies[0].position[1] << std::endl; // debug
-    std::cout << "First body velocity: " << bh_bodies[0].velocity[0] << ", " << bh_bodies[0].velocity[1] << std::endl; // debug
-
-    BHTree *final_tree = nullptr;
     std::vector<BHTree*> trees(total_time_steps, nullptr);
     // Run Barnes-Hut simulation
     start = std::chrono::steady_clock::now();
@@ -197,16 +193,12 @@ int main(int argc, char **argv)
         diff_sum += std::sqrt(dx * dx + dy * dy);
     }
     std::cout << "Average final position difference per body: " << diff_sum / n << " meters\n";
-    std::cout << "Final x of body 0: " << bh_positions[(total_time_steps - 1) * n * 2 + 0] << std::endl; // test
-    //std::cout << "Final x of body 0: " << bh_positions[(total_time_steps - 1) * n * 2 + 0] << std::endl;
-
     // Start GTK application with the visualizer
     auto app = Gtk::Application::create(argc, argv, "org.simulation.nbody");
-    Visualizer vis(all_positions, n, total_time_steps);
-    // Visualizer vis(bh_positions, n, total_time_steps, final_tree); //visualize the barnes simulation
-    Visualizer vis(all_positions, n, total_time_steps, {});
-    Visualizer vis(bh_positions, n, total_time_steps, trees); //uncomment to visualize the barnes simulation
-    app->run(vis);
+    Visualizer vis1(bis_all_positions, n, total_time_steps, {});        // Sequential
+    Visualizer vis2(all_positions, n, total_time_steps, {});            // Threaded
+    Visualizer vis3(bh_positions, n, total_time_steps, trees);          // Barnes-Hutt + Tree
+    app->run(vis2); //update with vis1, vis2 or vis3
 
     // Free resources
     delete[] bis_forces;
