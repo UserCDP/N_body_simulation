@@ -1,5 +1,7 @@
 \documentclass{article}
 \usepackage{graphicx} % Required for inserting images
+\usepackage{url}
+\usepackage{float}
 
 \title{CSE305 N-Body Simulation Project Report}
 \author{Daniela Cojocaru, Gabriel Faes, Aya Matmata}
@@ -8,9 +10,18 @@
 \begin{document}
 
 \maketitle
+\thispagestyle{empty}
+\newpage
 
 \section{Introduction}
 The N-body problem is a classic challenge in computational physics and computer science, involving the prediction of individual motions of a group of celestial objects interacting with each other throught gravitational forces. Due to the quadratic growth in computational complexity as the number of bodies increases, efficient simulation of such systems is both a practical and theoretical need. This report presents our implementation of an N-body simulation, focusing on both sequential and parallel approaches. We analyze the performance of our solution under varying numbers of bodies, simulation steps, and threads. The results provide insight into the scalability of parallelization strategies for computationally intensive simulations.
+
+\begin{figure}[H]
+        \centering
+        \includegraphics[width=1\linewidth]{many_bodies.png}
+        \caption{Depiction of the N-body problem with 1000 bodies}
+        \label{fig:enter-label}
+\end{figure}
 
 \section{Approach}
 Using the input data, the N-body simulation function updates an array (stored on the heap) which stores the position of every body on every time step. Every time step, knowing the current mass, position, and velocity of every body, the function updates every position and velocity using the time step length. Importantly, the function first updates velocities and then positions (this is an arbitrary decision, but may result in drastically different simulations compared to the reverse order).\\
@@ -38,7 +49,7 @@ Lab Computer
 \begin{figure}
         \centering
         \includegraphics[width=1\linewidth]{graph.png}
-        \caption{Enter Caption}
+        \caption{Comparison of sequential and concurrent execution times for varying body counts}
         \label{fig:enter-label}
 \end{figure}
 Computed for 1000 steps with 16 threads
@@ -117,10 +128,48 @@ Computed for 1000 steps and 1000 bodies.
 
 Speed up until 20 threads, which makes sense given the 20 logical threads the computer has.		
 
+\section{The Barnes-Hutt algorithm}
+We also implemented the Barnes-Hutt algorithm, which is a well known algorithm for approximating the N-body problem. The Barnes-Hutt algorithm reduces the complexity of the N-body problem from $O(n^2)$ to $O(n \log n)$ by grouping bodies from a "sector" into a single "super body" and calculating the gravitational force exerted by this super body instead of each individual body. This significantly speeds up the simulation, especially for large numbers of bodies.\\
+
+The results are shown in the table below, where we compare the Barnes-Hutt algorithm with our original implementation for 1000 bodies and 1000 steps:
+\begin{table}[h]
+    \centering
+    \begin{tabular}{|c|c|c|c|c|c|}
+        \hline
+        Bodies & Sequential time & Concurrent time & BH Time & BH Position Error \\ \hline
+        1     & 0     & 395   & 0    & $4.31 \times 10^{12}$ \\ \hline
+        5     & 0     & 438   & 1    & $5.42 \times 10^{12}$ \\ \hline
+        10    & 0     & 279   & 6    & $7.70 \times 10^{12}$ \\ \hline
+        50    & 13    & 280   & 37   & $2.43 \times 10^{13}$ \\ \hline
+        100   & 48    & 296   & 90   & $4.01 \times 10^{13}$ \\ \hline
+        500   & 1244  & 421   & 831  & $3.25 \times 10^{14}$ \\ \hline
+        1000  & 4924  & 994   & 1920 & $4.16 \times 10^{14}$ \\ \hline
+        2000  & 20820 & 3237  & 3406 & $1.19 \times 10^{15}$ \\ \hline
+        5000  & 145754& 25352 & 4982 & $2.55 \times 10^{15}$ \\ \hline
+    \end{tabular}
+    \caption{Performance comparison of Sequential, Threaded, and Barnes-Hutt implementations, and Barnes-Hutt position error}
+    \label{tab:bh_comparison}
+\end{table}
+
+
+\begin{figure}
+        \centering
+        \includegraphics[width=1\linewidth]{n_body_simulation_performance.png}
+        % \caption{Enter Caption}
+        \label{fig:enter-label}
+\end{figure}
+
+The Barnes-Hutt algorithm shows a significant speedup compared to the original implementation, especially for larger numbers of bodies. However, it also introduces a position error, which is expected due to the approximation nature of the algorithm. The error increases with the number of bodies, but remains within acceptable limits for many applications.
+
+
 \section{Work distribution}
 The work was distributed among the team members as follows: Daniela was responsible for implementing the main thread logic, Gabriel focused on developing the simulation threads, and Aya worked on the graphical representation of the simulation.
 
 \section{Conclusion}
 In conclusion, our implementation and analysis of the N-body simulation demonstrate both the challenges and opportunities inherent in parallelizing computationally intensive algorithms. While parallelization offers significant speedup for large numbers of bodies and steps, it introduces overhead that can outweigh its benefits for smaller problem sizes. Our results show that careful consideration of thread management and workload distribution is essential to achieve optimal performance, especially as the number of available logical processors increases. Future work could explore more advanced parallelization techniques, such as thread pooling or GPU acceleration, to further improve scalability and efficiency. Overall, this project provided valuable insights into the practical aspects of high-performance computing and parallel programming.
 
+\section{References}
+\begin{enumerate}
+    \item ``N-body problem.'' Wikipedia, The Free Encyclopedia. [Online]. Available: \url{https://en.wikipedia.org/wiki/N-body_simulation}
+\end{enumerate}
 \end{document}
